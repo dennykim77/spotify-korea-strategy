@@ -1,0 +1,520 @@
+<script type="text/javascript">
+        var gk_isXlsx = false;
+        var gk_xlsxFileLookup = {};
+        var gk_fileData = {};
+        function filledCell(cell) {
+          return cell !== '' && cell != null;
+        }
+        function loadFileData(filename) {
+        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
+            try {
+                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
+                var firstSheetName = workbook.SheetNames[0];
+                var worksheet = workbook.Sheets[firstSheetName];
+
+                // Convert sheet to JSON to filter blank rows
+                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
+                // Filter out blank rows (rows where all cells are empty, null, or undefined)
+                var filteredData = jsonData.filter(row => row.some(filledCell));
+
+                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
+                var headerRowIndex = filteredData.findIndex((row, index) =>
+                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
+                );
+                // Fallback
+                if (headerRowIndex === -1 || headerRowIndex > 25) {
+                  headerRowIndex = 0;
+                }
+
+                // Convert filtered JSON back to CSV
+                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
+                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
+                return csv;
+            } catch (e) {
+                console.error(e);
+                return "";
+            }
+        }
+        return gk_fileData[filename] || "";
+        }
+        </script><!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spotify Korea: Proposed Growth Strategy</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: Calm Harmony (Neutral Stone Base, Muted Spotify Green & Indigo Accent) -->
+    <!-- Application Structure Plan: A single-page, scrollable dashboard design is used instead of a linear slide format to encourage user exploration. The structure flows from a high-level market overview to the specific challenges and finally to the detailed growth opportunities. Key interactions include tabbed sections for organizing dense information (Trends, Growth Strategy) and interactive charts for data visualization. This non-linear dashboard approach is more user-friendly and engaging for a web-based medium than a simple slide-by-slide replication. -->
+    <!-- Visualization & Content Choices: 
+        - Market Penetration (Report Info) -> Compare (Goal) -> Bar Chart (Viz) -> Hover for details (Interaction) -> Clear visual for maturity comparison (Justification) -> Chart.js (Method).
+        - Market Growth (New) -> Change (Goal) -> Line Chart (Viz) -> Show historical and forecasted trend (Justification) -> Chart.js (Method).
+        - Competitor MAUs (Report Info) -> Compare (Goal) -> Grouped Horizontal Bar Chart (Viz) -> Shows changes over time for each platform (Justification) -> Chart.js (Method).
+        - Consumption Trends (Report Info) -> Organize (Goal) -> Tabbed Interface (Presentation) -> Click to switch content (Interaction) -> Prevents information overload and focuses user attention (Justification) -> JS/Tailwind (Method).
+        - Growth Opportunities (Report Info) -> Organize/Compare (Goal) -> Tabbed Interface (Presentation) -> Click to switch between the two main strategies (Interaction) -> Allows clear separation and deep dives into the two primary strategic pillars (Justification) -> JS/Tailwind (Method).
+    -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f5f5f4; /* stone-100 */
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 300px;
+        }
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 350px;
+            }
+        }
+        .nav-link {
+            transition: color 0.3s, border-bottom-color 0.3s;
+            border-bottom: 2px solid transparent;
+        }
+        .nav-link:hover, .nav-link.active {
+            color: #1DB954;
+            border-bottom-color: #1DB954;
+        }
+        .tab-btn.active {
+            background-color: #1DB954;
+            color: white;
+        }
+        .tab-btn {
+            transition: background-color 0.3s, color 0.3s;
+        }
+    </style>
+</head>
+<body class="text-stone-800">
+
+    <header class="bg-stone-50/80 backdrop-blur-sm sticky top-0 z-50 shadow-sm">
+        <nav class="container mx-auto px-6 py-4 flex justify-between items-center">
+            <div>
+                <h1 class="text-xl md:text-2xl font-bold text-stone-900">
+                    <span class="text-[#1DB954]">Spotify</span> Korea Strategy
+                </h1>
+                <p class="text-sm md:text-base text-stone-600">Taehyung (Denny) Kim</p>
+            </div>
+            <div class="hidden md:flex items-center space-x-8 text-sm font-medium">
+                <a href="#market-overview" class="nav-link pb-1">Market</a>
+                <a href="#competition" class="nav-link pb-1">Competition</a>
+                <a href="#trends" class="nav-link pb-1">Trends</a>
+                <a href="#spotify-status" class="nav-link pb-1">Spotify's Position</a>
+                <a href="#growth-strategy" class="nav-link pb-1">Growth Strategy</a>
+            </div>
+            <div class="md:hidden">
+                <button id="mobile-menu-button" class="text-stone-800 focus:outline-none">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path></svg>
+                </button>
+            </div>
+        </nav>
+        <div id="mobile-menu" class="hidden md:hidden">
+            <a href="#market-overview" class="block text-center py-2 px-4 text-sm text-stone-700 hover:bg-stone-200">Market</a>
+            <a href="#competition" class="block text-center py-2 px-4 text-sm text-stone-700 hover:bg-stone-200">Competition</a>
+            <a href="#trends" class="block text-center py-2 px-4 text-sm text-stone-700 hover:bg-stone-200">Trends</a>
+            <a href="#spotify-status" class="block text-center py-2 px-4 text-sm text-stone-700 hover:bg-stone-200">Spotify's Position</a>
+            <a href="#growth-strategy" class="block text-center py-2 px-4 text-sm text-stone-700 hover:bg-stone-200">Growth Strategy</a>
+        </div>
+    </header>
+
+    <main class="container mx-auto px-6 py-8 md:py-12">
+
+        <section id="intro" class="text-center mb-16 md:mb-24">
+            <h2 class="text-3xl md:text-5xl font-bold mb-4">Proposed Growth Strategy</h2>
+            <p class="text-lg md:text-xl text-stone-600 max-w-3xl mx-auto">An analysis of the Korean music streaming market and a proposed 12-18 month growth plan for Spotify Korea.</p>
+        </section>
+
+        <section id="market-overview" class="mb-16 md:mb-24 scroll-mt-20">
+            <h3 class="text-2xl md:text-3xl font-bold text-center mb-2">The Korean Music Market at a Glance</h3>
+            <p class="text-stone-600 text-center max-w-2xl mx-auto mb-12">The digital music market in Korea is mature and highly active, valued at approximately ₩1.8 trillion. User migration is vigorous, with a significant shift towards global platforms, presenting a clear opportunity for strategic differentiation to capture market share and grow revenue.</p>
+            <div class="grid md:grid-cols-2 gap-8 items-center mb-8">
+                <div class="bg-white p-6 rounded-xl shadow-md">
+                    <h4 class="font-bold text-lg mb-4 text-center">Digital Music Market Penetration ('23)</h4>
+                    <div class="chart-container h-64 md:h-[350px]">
+                        <canvas id="penetrationChart"></canvas>
+                    </div>
+                </div>
+                <div class="bg-white p-6 rounded-xl shadow-md">
+                    <h4 class="font-bold text-lg mb-4 text-center">Market Share: Global vs. Local (As of '23)</h4>
+                    <div class="chart-container h-64 md:h-[350px]">
+                        <canvas id="marketShareChart"></canvas>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white p-6 rounded-xl shadow-md max-w-2xl mx-auto">
+                <h4 class="font-bold text-lg mb-4 text-center">Korean Music Streaming Market Growth (2020-2030)</h4>
+                <div class="chart-container h-64 md:h-[350px]">
+                    <canvas id="marketGrowthChart"></canvas>
+                </div>
+            </div>
+        </section>
+
+        <section id="competition" class="mb-16 md:mb-24 scroll-mt-20">
+            <h3 class="text-2xl md:text-3xl font-bold text-center mb-2">Competitive Landscape</h3>
+            <p class="text-stone-600 text-center max-w-2xl mx-auto mb-12">The market is dominated by a few key players, each with a distinct strategic advantage. While local services leverage telecom partnerships, global platforms are gaining ground, especially among younger demographics, forcing the market into a state of flux. Spotify is a growing player in this dynamic environment.</p>
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <div class="bg-white p-6 rounded-xl shadow-md flex flex-col">
+                     <h4 class="font-bold text-lg mb-4 text-center">Monthly Active Users (MAU) Comparison (2023 vs. 2025)</h4>
+                     <div class="flex-grow chart-container h-80 md:h-[400px]">
+                        <canvas id="mauChart"></canvas>
+                    </div>
+                </div>
+                <div class="space-y-4">
+                    <div class="bg-white p-4 rounded-lg shadow-sm">
+                        <h5 class="font-bold text-lg">YouTube Music</h5>
+                        <p class="text-sm text-stone-600">Strategy: Bundled with YouTube Premium. Leverages vast library of unique video content (live versions, covers) to drive retention.</p>
+                    </div>
+                    <div class="bg-white p-4 rounded-lg shadow-sm">
+                        <h5 class="font-bold text-lg">Melon</h5>
+                        <p class="text-sm text-stone-600">Strategy: Historic leader with strong K-Pop fandom appeal. Integrates with KakaoTalk and focuses on exclusive domestic content.</p>
+                    </div>
+                    <div class="bg-white p-4 rounded-lg shadow-sm">
+                        <h5 class="font-bold text-lg">Genie Music</h5>
+                        <p class="text-sm text-stone-600">Strategy: User base built through KT telecom bundles. Growth has stalled due to intense competition.</p>
+                    </div>
+                    <div class="bg-white p-4 rounded-lg shadow-sm">
+                        <h5 class="font-bold text-lg">FLO</h5>
+                        <p class="text-sm text-stone-600">Strategy: Relies on SK Telecom bundles and AI-driven recommendations. Market impact remains limited.</p>
+                    </div>
+                     <div class="bg-white p-4 rounded-lg shadow-sm">
+                        <h5 class="font-bold text-lg">Spotify Korea</h5>
+                        <p class="text-sm text-stone-600">Strategy: Balances localization with global strengths (recommendation algorithms, K-Pop content), rapidly growing with its ad-supported tier.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="trends" class="mb-16 md:mb-24 scroll-mt-20">
+            <h3 class="text-2xl md:text-3xl font-bold text-center mb-2">Evolving Consumption Trends</h3>
+            <p class="text-stone-600 text-center max-w-2xl mx-auto mb-12">User expectations are shifting. Today's listeners demand personalization, integrated experiences, and value beyond simple music streaming. Spotify is well-aligned with these core trends, providing a solid foundation for growth.</p>
+            <div>
+                <div class="mb-4 flex flex-wrap justify-center gap-2">
+                    <button data-tab="trend-1" class="tab-btn active text-sm font-medium py-2 px-4 rounded-full bg-stone-200">🤖 AI Recommendations</button>
+                    <button data-tab="trend-2" class="tab-btn text-sm font-medium py-2 px-4 rounded-full bg-stone-200">🎬 Music & Video</button>
+                    <button data-tab="trend-3" class="tab-btn text-sm font-medium py-2 px-4 rounded-full bg-stone-200">🎁 Bundled Subscriptions</button>
+                    <button data-tab="trend-4" class="tab-btn text-sm font-medium py-2 px-4 rounded-full bg-stone-200">🎵 Ambient Listening</button>
+                </div>
+                <div class="bg-white p-6 rounded-xl shadow-md min-h-[180px]">
+                    <div id="trend-1" class="tab-content">
+                        <h4 class="font-bold text-lg mb-2">Personalized AI Recommendations</h4>
+                        <p class="text-stone-600">Users expect apps to intuitively curate playlists tailored to their tastes. Spotify's strength in personalization (e.g., Discover Weekly) is a key differentiator against platforms lacking sophisticated curation.</p>
+                    </div>
+                    <div id="trend-2" class="tab-content hidden">
+                        <h4 class="font-bold text-lg mb-2">Integration of Music and Video</h4>
+                        <p class="text-stone-600">Music discovery is increasingly happening on visual platforms like TikTok and YouTube. Successful apps are incorporating video and social elements to create more engaging experiences.</p>
+                    </div>
+                    <div id="trend-3" class="tab-content hidden">
+                        <h4 class="font-bold text-lg mb-2">Bundled Subscriptions</h4>
+                        <p class="text-stone-600">Consumers prefer bundled services (music + OTT + commerce) for greater value. Integration into broader subscription packages is becoming essential to compete, especially against telecom-backed rivals.</p>
+                    </div>
+                    <div id="trend-4" class="tab-content hidden">
+                        <h4 class="font-bold text-lg mb-2">Music as Background Ambiance</h4>
+                        <p class="text-stone-600">Music has become the soundtrack to everyday life. Context-specific playlists for activities like studying, working out, or relaxing are crucial, demanding seamless streaming across all devices.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="spotify-status" class="mb-16 md:mb-24 scroll-mt-20">
+            <h3 class="text-2xl md:text-3xl font-bold text-center mb-2">Spotify Korea: Current Position</h3>
+            <p class="text-stone-600 text-center max-w-2xl mx-auto mb-12">Spotify's strategy successfully blends its global technological strengths with local cultural nuances. While the recent introduction of an ad-supported tier has spurred user growth, key challenges in brand awareness and monetization must be addressed.</p>
+            <div class="grid md:grid-cols-2 gap-8">
+                <div class="bg-white p-6 rounded-xl shadow-md">
+                    <h4 class="font-bold text-lg mb-4">✅ Strengths & Strategy</h4>
+                    <ul class="space-y-3 text-stone-600 list-disc list-inside">
+                        <li><strong>Balanced Approach:</strong> Leverages globally acclaimed recommendation algorithms while offering localized K-Pop playlists and artist support via RADAR Korea.</li>
+                        <li><strong>Global Artist Access:</strong> Provides exclusive content from global K-Pop stars like BTS, attracting a dedicated fanbase.</li>
+                        <li><strong>Proven Growth Model:</strong> The recent launch of an ad-supported free tier has rapidly expanded the user base, creating a larger funnel for premium conversions.</li>
+                    </ul>
+                </div>
+                <div class="bg-white p-6 rounded-xl shadow-md">
+                    <h4 class="font-bold text-lg mb-4">⚠️ Challenges to Overcome</h4>
+                    <ul class="space-y-3 text-stone-600 list-disc list-inside">
+                        <li><strong>Brand Awareness:</strong> Remains lower than entrenched local competitors like Melon and the globally dominant YouTube.</li>
+                        <li><strong>User Experience:</strong> The ad-supported model is less familiar to Korean users, potentially creating friction and limiting adoption.</li>
+                        <li><strong>Monetization:</strong> The key challenge is to effectively convert the growing free user base into paying subscribers or generate substantial advertising revenue.</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <section id="growth-strategy" class="scroll-mt-20">
+            <h3 class="text-2xl md:text-3xl font-bold text-center mb-2">Path to Growth: Two Key Opportunities</h3>
+             <p class="text-stone-600 text-center max-w-3xl mx-auto mb-12">In a saturated market, growth must be intentional. The path forward lies in two powerful, complementary strategies: aggressively expanding the user base through strategic partnerships and creating undeniable value through exclusive content to ensure long-term user lock-in.</p>
+            <div>
+                 <div class="mb-4 flex justify-center gap-4">
+                    <button data-tab="growth-1" class="tab-btn active text-base font-medium py-3 px-6 rounded-lg bg-stone-200">🤝 Strategic Partnerships</button>
+                    <button data-tab="growth-2" class="tab-btn text-base font-medium py-3 px-6 rounded-lg bg-stone-200">💎 Exclusive Content</button>
+                </div>
+
+                <div id="growth-1" class="tab-content bg-white p-6 md:p-8 rounded-xl shadow-lg">
+                    <h4 class="font-bold text-xl mb-4">Opportunity 1: User Base Expansion through Partnerships</h4>
+                    <p class="text-stone-600 mb-6">With limited organic growth available, strategic bundling is the most effective way to rapidly acquire users. By integrating with major telecom and Big Tech ecosystems, Spotify can lower customer acquisition costs (CAC) and instantly enhance its competitive standing.</p>
+                    <div class="grid md:grid-cols-3 gap-6 mb-8">
+                        <div class="bg-stone-50 p-4 rounded-lg border border-stone-200">
+                            <h5 class="font-bold">LG U+</h5>
+                            <p class "text-sm text-stone-600">An ideal partner lacking a proprietary music service. Propose bundling for 5G users, family plans, and membership discounts.</p>
+                        </div>
+                        <div class="bg-stone-50 p-4 rounded-lg border border-stone-200">
+                            <h5 class="font-bold">Naver</h5>
+                            <p class="text-sm text-stone-600">Leverage their successful bundling history (e.g., Netflix) to integrate Spotify into their highly engaged user ecosystem.</p>
+                        </div>
+                        <div class="bg-stone-50 p-4 rounded-lg border border-stone-200">
+                            <h5 class="font-bold">Coupang</h5>
+                            <p class="text-sm text-stone-600">A 'white space' opportunity to offer a compelling music add-on to their massive subscriber base, especially given dissatisfaction with other offers.</p>
+                        </div>
+                    </div>
+                    <h5 class="font-bold text-lg mb-3">Significance</h5>
+                    <ul class="space-y-2 text-sm text-stone-600 list-disc list-inside mb-8">
+                        <li>Bundling partnerships significantly reduce Customer Acquisition Costs (CAC) and enhance competitive positioning.</li>
+                        <li>Proven success with examples like LG U+'s 450K new subscribers in Q1 2024 (bundling with YouTube Premium and Netflix) and Naver's 50%+ membership increase (Netflix bundling).</li>
+                    </ul>
+                     <h5 class="font-bold text-lg mb-3">Operational Considerations & Risks</h5>
+                     <ul class="space-y-2 text-sm text-stone-600 list-disc list-inside">
+                        <li><strong>Profitability:</strong> Bundling lowers unit price. Revenue sharing and trial periods must be carefully negotiated, viewing initial costs as CAC for long-term gain.</li>
+                        <li><strong>Joint Marketing:</strong> Requires large-scale, effective co-marketing campaigns to maximize awareness and adoption.</li>
+                        <li><strong>Technical Integration:</strong> Needs smooth SSO implementation and strict compliance with Korean privacy standards (PIPA).</li>
+                        <li><strong>Regulatory Risk:</strong> Must adhere to KFTC guidelines to avoid any perception of restrictive or unfair bundling practices.</li>
+                     </ul>
+                </div>
+
+                <div id="growth-2" class="tab-content hidden bg-white p-6 md:p-8 rounded-xl shadow-lg">
+                    <h4 class="font-bold text-xl mb-4">Opportunity 2: User Lock-in through Exclusive Content</h4>
+                    <p class="text-stone-600 mb-6">Exclusive content is the ultimate differentiator. By becoming the sole provider of unique K-Pop and K-Drama audio experiences, Spotify can build deep emotional attachment, reduce churn, and create a powerful incentive for users to upgrade to premium.</p>
+                    <div class="grid md:grid-cols-2 gap-6 mb-8">
+                        <div class="bg-stone-50 p-4 rounded-lg border border-stone-200">
+                            <h5 class="font-bold">Agency Partnerships (SM, YG, HYBE)</h5>
+                            <p class="text-sm text-stone-600">Secure exclusive pre-releases, original audio documentaries, podcasts, and behind-the-scenes content.</p>
+                        </div>
+                        <div class="bg-stone-50 p-4 rounded-lg border border-stone-200">
+                            <h5 class="font-bold">K-Drama Soundtracks</h5>
+                            <p class="text-sm text-stone-600">License exclusive rights to the soundtracks of popular and highly anticipated K-Dramas.</p>
+                        </div>
+                         <div class="bg-stone-50 p-4 rounded-lg border border-stone-200">
+                            <h5 class="font-bold">Spotify Singles & Live Audio</h5>
+                            <p class="text-sm text-stone-600">Produce a regular series of exclusive artist collaborations and secure global audio streaming rights for major K-Pop concerts.</p>
+                        </div>
+                    </div>
+                    <h5 class="font-bold text-lg mb-3">Significance</h5>
+                    <ul class="space-y-2 text-sm text-stone-600 list-disc list-inside mb-8">
+                        <li>Encourages users to spend more time within the app, building emotional attachment ("Melon doesn't have this, but Spotify does").</li>
+                        <li>Drives user lock-in, significantly reduces churn, promotes premium subscription upgrades, and boosts global K-pop fandom engagement.</li>
+                        <li>Proven success with OTT original content (Netflix, Disney+, Coupang Play) and Melon's historical dominance through exclusive K-pop pre-releases.</li>
+                    </ul>
+                    <h5 class="font-bold text-lg mb-3">Operational Considerations & Risks</h5>
+                     <ul class="space-y-2 text-sm text-stone-600 list-disc list-inside">
+                        <li><strong>Acquisition Costs:</strong> Requires significant initial investment. Must be strategic, focusing on high-impact artists and content.</li>
+                        <li><strong>Production Capability:</strong> Needs investment in local studio partnerships, infrastructure, and production talent.</li>
+                        <li><strong>Copyright Risk:</strong> Requires comprehensive contracts to manage complex licensing and mitigate potential antitrust issues.</li>
+                        <li><strong>Quality Risk:</strong> Content must be high-quality and resonate with the market; requires rigorous production standards and feedback loops.</li>
+                     </ul>
+                </div>
+            </div>
+        </section>
+
+    </main>
+    
+    <footer class="bg-stone-800 text-stone-300 mt-16 md:mt-24">
+        <div class="container mx-auto px-6 py-8 text-center">
+            <h4 class="font-bold text-lg mb-2 text-white">Strategic Outlook</h4>
+            <p class="text-sm max-w-3xl mx-auto">Spotify's success in Korea hinges on evolving from a global platform to a hyper-localized audio entertainment hub. By prioritizing strategic partnerships and exclusive content, Spotify can capture market leadership and build a durable, profitable presence.</p>
+        </div>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+
+            // Mobile Menu Toggle
+            const mobileMenuButton = document.getElementById('mobile-menu-button');
+            const mobileMenu = document.getElementById('mobile-menu');
+            mobileMenuButton.addEventListener('click', () => {
+                mobileMenu.classList.toggle('hidden');
+            });
+            
+            // Tab functionality
+            const setupTabs = (containerSelector) => {
+                const container = document.querySelector(containerSelector);
+                if (!container) return;
+                
+                const tabButtons = container.querySelectorAll('.tab-btn');
+                const tabContents = container.querySelectorAll('.tab-content');
+
+                tabButtons.forEach(button => {
+                    button.addEventListener('click', () => {
+                        tabButtons.forEach(btn => btn.classList.remove('active'));
+                        button.classList.add('active');
+                        
+                        const targetTab = button.dataset.tab;
+                        tabContents.forEach(content => {
+                            if (content.id === targetTab) {
+                                content.classList.remove('hidden');
+                            } else {
+                                content.classList.add('hidden');
+                            }
+                        });
+                    });
+                });
+            };
+
+            setupTabs('#trends');
+            setupTabs('#growth-strategy');
+
+            const chartOptions = {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            color: '#44403c', // stone-700
+                            font: {
+                                family: "'Inter', sans-serif"
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: { color: '#57534e' }, // stone-600
+                        grid: { color: '#e7e5e4' } // stone-200
+                    },
+                    x: {
+                        ticks: { color: '#57534e' }, // stone-600
+                        grid: { display: false }
+                    }
+                }
+            };
+            
+            // Penetration Chart
+            const penetrationCtx = document.getElementById('penetrationChart').getContext('2d');
+            new Chart(penetrationCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['South Korea', 'United Kingdom', 'United States'],
+                    datasets: [{
+                        label: 'Market Penetration (%)',
+                        data: [39.5, 44.3, 45.3],
+                        backgroundColor: ['#4f46e5', '#7c3aed', '#a855f7'], // Indigo, Purple, Fuchsia
+                        borderColor: '#ffffff',
+                        borderWidth: 2
+                    }]
+                },
+                options: chartOptions
+            });
+
+            // Market Share Chart
+            const marketShareCtx = document.getElementById('marketShareChart').getContext('2d');
+            new Chart(marketShareCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Global Platforms (YouTube, Spotify)', 'Local Platforms'],
+                    datasets: [{
+                        data: [56, 44],
+                        backgroundColor: ['#1DB954', '#4f46e5'], // Spotify Green, Indigo
+                        borderColor: '#ffffff',
+                        borderWidth: 4,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                     plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                color: '#44403c',
+                                font: {
+                                    family: "'Inter', sans-serif"
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Music Streaming Market Growth Chart
+            const marketGrowthCtx = document.getElementById('marketGrowthChart').getContext('2d');
+            new Chart(marketGrowthCtx, {
+                type: 'line',
+                data: {
+                    labels: ['2020', '2021', '2022', '2023', '2024', '2025', '2026', '2027', '2028', '2029', '2030'],
+                    datasets: [{
+                        label: 'Market Value (Trillion KRW)',
+                        data: [1.3, 1.5, 1.65, 1.8, 1.95, 2.1, 2.25, 2.4, 2.55, 2.7, 2.85], // Mock data
+                        borderColor: '#1DB954', // Spotify Green
+                        backgroundColor: 'rgba(29, 185, 84, 0.2)',
+                        fill: true,
+                        tension: 0.3,
+                        pointBackgroundColor: '#1DB954'
+                    }]
+                },
+                options: {
+                    ...chartOptions,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                color: '#57534e',
+                                callback: function(value) { return value + 'T KRW'; }
+                            },
+                            grid: { color: '#e7e5e4' }
+                        },
+                        x: {
+                            ticks: { color: '#57534e' },
+                            grid: { display: false }
+                        }
+                    }
+                }
+            });
+
+            // MAU Chart with two years of data and Spotify
+            const mauCtx = document.getElementById('mauChart').getContext('2d');
+            new Chart(mauCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['YouTube Music', 'Melon', 'Genie Music', 'FLO', 'Spotify Korea'],
+                    datasets: [{
+                        label: 'MAU 2025 (Millions)',
+                        data: [9.8, 6.2, 2.6, 1.76, 3.29],
+                        backgroundColor: ['#ef4444', '#f97316', '#eab308', '#22c55e', '#1DB954'],
+                        borderColor: '#ffffff',
+                        borderWidth: 2
+                    },
+                    {
+                        label: 'MAU 2023 (Millions)',
+                        data: [8.5, 7.0, 3.0, 1.5, 1.5], // Mock 2023 data
+                        backgroundColor: ['#fca5a5', '#fdba74', '#fde047', '#86efac', '#86efac'], // Lighter shades
+                        borderColor: '#ffffff',
+                        borderWidth: 2
+                    }]
+                },
+                 options: {
+                    ...chartOptions,
+                    indexAxis: 'y',
+                    scales: {
+                         x: {
+                            beginAtZero: true,
+                            ticks: { color: '#57534e' },
+                            grid: { color: '#e7e5e4' }
+                        },
+                        y: {
+                            ticks: { color: '#57534e' },
+                            grid: { display: false }
+                        }
+                    }
+                 }
+            });
+        });
+
+    </script>
+</body>
+</html>
