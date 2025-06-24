@@ -1,43 +1,4 @@
-<script type="text/javascript">
-        var gk_isXlsx = false;
-        var gk_xlsxFileLookup = {};
-        var gk_fileData = {};
-        function filledCell(cell) {
-          return cell !== '' && cell != null;
-        }
-        function loadFileData(filename) {
-        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
-            try {
-                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
-                var firstSheetName = workbook.SheetNames[0];
-                var worksheet = workbook.Sheets[firstSheetName];
-
-                // Convert sheet to JSON to filter blank rows
-                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
-                // Filter out blank rows (rows where all cells are empty, null, or undefined)
-                var filteredData = jsonData.filter(row => row.some(filledCell));
-
-                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
-                var headerRowIndex = filteredData.findIndex((row, index) =>
-                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
-                );
-                // Fallback
-                if (headerRowIndex === -1 || headerRowIndex > 25) {
-                  headerRowIndex = 0;
-                }
-
-                // Convert filtered JSON back to CSV
-                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
-                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
-                return csv;
-            } catch (e) {
-                console.error(e);
-                return "";
-            }
-        }
-        return gk_fileData[filename] || "";
-        }
-        </script><!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en" class="scroll-smooth">
 <head>
     <meta charset="UTF-8">
@@ -50,12 +11,13 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <!-- Chosen Palette: Calm Harmony (Neutral Stone Base, Muted Spotify Green & Indigo Accent) -->
     <!-- Application Structure Plan: A single-page, scrollable dashboard design is used instead of a linear slide format to encourage user exploration. The structure flows from a high-level market overview to the specific challenges and finally to the detailed growth opportunities. Key interactions include tabbed sections for organizing dense information (Trends, Growth Strategy) and interactive charts for data visualization. This non-linear dashboard approach is more user-friendly and engaging for a web-based medium than a simple slide-by-slide replication. -->
-    <!-- Visualization & Content Choices: 
+    <!-- Visualization & Content Choices:
         - Market Penetration (Report Info) -> Compare (Goal) -> Bar Chart (Viz) -> Hover for details (Interaction) -> Clear visual for maturity comparison (Justification) -> Chart.js (Method).
         - Market Growth (New) -> Change (Goal) -> Line Chart (Viz) -> Show historical and forecasted trend (Justification) -> Chart.js (Method).
         - Competitor MAUs (Report Info) -> Compare (Goal) -> Grouped Horizontal Bar Chart (Viz) -> Shows changes over time for each platform (Justification) -> Chart.js (Method).
         - Consumption Trends (Report Info) -> Organize (Goal) -> Tabbed Interface (Presentation) -> Click to switch content (Interaction) -> Prevents information overload and focuses user attention (Justification) -> JS/Tailwind (Method).
         - Growth Opportunities (Report Info) -> Organize/Compare (Goal) -> Tabbed Interface (Presentation) -> Click to switch between the two main strategies (Interaction) -> Allows clear separation and deep dives into the two primary strategic pillars (Justification) -> JS/Tailwind (Method).
+        - Offline Music Events (New) -> Inform/Engage (Goal) -> Horizontal Image Gallery (Presentation) + Textual Explanation -> Visualizes potential event types and highlights engagement opportunities (Justification) -> HTML/CSS/JS (Method).
     -->
     <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
     <style>
@@ -90,6 +52,57 @@
         }
         .tab-btn {
             transition: background-color 0.3s, color 0.3s;
+        }
+        .image-gallery-container {
+            overflow-x: scroll;
+            scroll-snap-type: x mandatory;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: none; /* For Firefox */
+            -ms-overflow-style: none;  /* For IE and Edge */
+            display: flex; /* Ensure flex behavior */
+            flex-wrap: nowrap; /* Prevent wrapping onto next line */
+            padding-bottom: 1rem; /* Add some padding for scrollbar visibility if it appears */
+            justify-content: flex-start; /* Align items to the start for scrolling */
+            align-items: center; /* Vertically center images if they have different heights */
+            cursor: grab; /* Indicate it's draggable */
+        }
+        .image-gallery-container::-webkit-scrollbar {
+            display: none; /* For Chrome, Safari, Opera */
+        }
+        .image-gallery-item {
+            scroll-snap-align: center; /* Snap to center of item */
+            flex-shrink: 0; /* Prevent shrinking */
+            width: auto; /* Allow width to be determined by content/min-width */
+            min-width: 90vw; /* At least 90% of viewport width on small screens */
+            max-width: 700px; /* Max width to cap size on very large screens */
+            height: 300px; /* Consistent height for all images */
+            object-fit: cover; /* Cover the area, cropping if necessary */
+            margin-right: 1.5rem; /* Space between images, slightly more */
+            border-radius: 0.75rem; /* rounded-xl */
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1); /* shadow-md */
+        }
+        .image-gallery-item:last-child {
+            margin-right: 0; /* No margin on the last item */
+        }
+
+        @media (min-width: 640px) { /* sm breakpoint */
+            .image-gallery-item {
+                min-width: 450px;
+                height: 350px;
+            }
+        }
+
+        @media (min-width: 768px) { /* md breakpoint */
+            .image-gallery-item {
+                min-width: 550px; /* Larger minimum width for tablets/desktops */
+                height: 400px; /* Taller for larger screens */
+            }
+        }
+        @media (min-width: 1024px) { /* lg breakpoint */
+            .image-gallery-item {
+                min-width: 600px; /* Even larger minimum width */
+                height: 450px; /* Even taller for large screens */
+            }
         }
     </style>
 </head>
@@ -248,11 +261,12 @@
 
         <section id="growth-strategy" class="scroll-mt-20">
             <h3 class="text-2xl md:text-3xl font-bold text-center mb-2">Path to Growth: Two Key Opportunities</h3>
-             <p class="text-stone-600 text-center max-w-3xl mx-auto mb-12">In a saturated market, growth must be intentional. The path forward lies in two powerful, complementary strategies: aggressively expanding the user base through strategic partnerships and creating undeniable value through exclusive content to ensure long-term user lock-in.</p>
+             <p class="text-stone-600 text-center max-w-3xl mx-auto mb-12">In a saturated market, growth must be intentional. The path forward lies in powerful, complementary strategies: aggressively expanding the user base through strategic partnerships, creating undeniable value through exclusive content, and fostering deeper connections through offline experiences to ensure long-term user lock-in.</p>
             <div>
-                 <div class="mb-4 flex justify-center gap-4">
+                 <div class="mb-4 flex flex-wrap justify-center gap-4">
                     <button data-tab="growth-1" class="tab-btn active text-base font-medium py-3 px-6 rounded-lg bg-stone-200">🤝 Strategic Partnerships</button>
                     <button data-tab="growth-2" class="tab-btn text-base font-medium py-3 px-6 rounded-lg bg-stone-200">💎 Exclusive Content</button>
+                    <button data-tab="growth-3" class="tab-btn text-base font-medium py-3 px-6 rounded-lg bg-stone-200">🎉 Offline Music Events</button>
                 </div>
 
                 <div id="growth-1" class="tab-content bg-white p-6 md:p-8 rounded-xl shadow-lg">
@@ -261,7 +275,7 @@
                     <div class="grid md:grid-cols-3 gap-6 mb-8">
                         <div class="bg-stone-50 p-4 rounded-lg border border-stone-200">
                             <h5 class="font-bold">LG U+</h5>
-                            <p class "text-sm text-stone-600">An ideal partner lacking a proprietary music service. Propose bundling for 5G users, family plans, and membership discounts.</p>
+                            <p class="text-sm text-stone-600">An ideal partner lacking a proprietary music service. Propose bundling for 5G users, family plans, and membership discounts.</p>
                         </div>
                         <div class="bg-stone-50 p-4 rounded-lg border border-stone-200">
                             <h5 class="font-bold">Naver</h5>
@@ -312,16 +326,55 @@
                     <h5 class="font-bold text-lg mb-3">Operational Considerations & Risks</h5>
                      <ul class="space-y-2 text-sm text-stone-600 list-disc list-inside">
                         <li><strong>Acquisition Costs:</strong> Requires significant initial investment. Must be strategic, focusing on high-impact artists and content.</li>
-                        <li><strong>Production Capability:</strong> Needs investment in local studio partnerships, infrastructure, and production talent.</li>
+                        <li><strong>Production Capability:</strong> Needs investment in local studio partnerships, infrastructure, and talent.</li>
                         <li><strong>Copyright Risk:</strong> Requires comprehensive contracts to manage complex licensing and mitigate potential antitrust issues.</li>
                         <li><strong>Quality Risk:</strong> Content must be high-quality and resonate with the market; requires rigorous production standards and feedback loops.</li>
+                     </ul>
+                </div>
+
+                <div id="growth-3" class="tab-content hidden bg-white p-6 md:p-8 rounded-xl shadow-lg">
+                    <h4 class="font-bold text-xl mb-4">Opportunity 3: Elevate Brand Presence with Offline Music Events</h4>
+                    <p class="text-stone-600 mb-6">Amplify Spotify's brand presence and foster deeper user engagement by creating immersive, real-world music experiences. While Spotify already collaborates with artists and hosts pop-up stores, expanding into dedicated offline music events offers a powerful channel for direct user acquisition and community building.</p>
+
+                    <div id="image-gallery-scrollable" class="image-gallery-container flex space-x-4 pb-4 mb-6">
+                        <img src="https://i.imgur.com/yVsThG7.jpg" alt="Spotify Pool Party Event" class="image-gallery-item rounded-lg shadow-md">
+                        <img src="https://i.imgur.com/xAnqfZx.jpg" alt="Spotify Event Stage" class="image-gallery-item rounded-lg shadow-md">
+                        <img src="https://i.imgur.com/K4Q6IME.jpg" alt="Spotify Beach Party Crowd" class="image-gallery-item rounded-lg shadow-md">
+                    </div>
+
+                    <h5 class="font-bold text-lg mb-3">Approach & Engagement Ideas</h5>
+                    <ul class="space-y-2 text-sm text-stone-600 list-disc list-inside mb-8">
+                        <li><strong>Host Spotify-Branded Events:</strong> Establish temporary party venues (e.g., collaborate with local lounges, organize themed pool or beach parties) to create unique Spotify experiences.</li>
+                        <li><strong>Co-Branded Collaborations:</strong> Partner with other popular brands, festivals, or cultural events to extend reach and integrate Spotify into broader lifestyle contexts.</li>
+                        <li><strong>Direct App Downloads:</strong> Feature prominent QR codes at event entry and interaction points for immediate app downloads and playlist access.</li>
+                        <li><strong>Curated Playlists:</strong> Showcase live DJs playing Spotify-exclusive playlists relevant to the event's atmosphere, linking directly to them in the app.</li>
+                        <li><strong>Exclusive Premium Access:</strong> Offer special perks (e.g., VIP areas, early access, merchandise) to incentivize Spotify Premium sign-ups.</li>
+                        <li><strong>Artist Interactions:</strong> Arrange meet-and-meets or mini-performances with popular local and global artists.</li>
+                        <li><strong>Social Amplification:</strong> Encourage user-generated content and social media sharing with dedicated event hashtags and interactive photo zones.</li>
+                    </ul>
+
+                    <h5 class="font-bold text-lg mb-3">Significance</h5>
+                    <ul class="space-y-2 text-sm text-stone-600 list-disc list-inside mb-8">
+                        <li>Creates memorable, tangible brand experiences that differentiate Spotify beyond digital offerings.</li>
+                        <li>Drives direct app downloads and user acquisition in high-energy, engaging environments.</li>
+                        <li>Strengthens brand loyalty and fosters a sense of community among Spotify users.</li>
+                        <li>Generates significant organic buzz and social media amplification, extending reach beyond physical attendees.</li>
+                        <li>Offers a powerful channel to convert free users to premium subscribers through exclusive event benefits and content.</li>
+                    </ul>
+                    <h5 class="font-bold text-lg mb-3">Operational Considerations & Risks</h5>
+                     <ul class="space-y-2 text-sm text-stone-600 list-disc list-inside">
+                        <li><strong>Venue & Logistics:</strong> Requires meticulous planning for venue sourcing, permits, security, staffing, and event flow.</li>
+                        <li><strong>Budget & ROI:</strong> Involves significant investment in production, artist fees, marketing, and logistics; clear KPIs are essential to track returns.</li>
+                        <li><strong>Brand Alignment:</strong> Events must carefully align with Spotify's brand identity and resonate with the target audience.</li>
+                        <li><strong>Scalability:</strong> While impactful, physical events have limited direct reach; focus on digital content capture for broader impact.</li>
+                        <li><strong>Safety & Compliance:</strong> Strict adherence to local health, safety, and noise regulations is paramount.</li>
                      </ul>
                 </div>
             </div>
         </section>
 
     </main>
-    
+
     <footer class="bg-stone-800 text-stone-300 mt-16 md:mt-24">
         <div class="container mx-auto px-6 py-8 text-center">
             <h4 class="font-bold text-lg mb-2 text-white">Strategic Outlook</h4>
@@ -338,12 +391,12 @@
             mobileMenuButton.addEventListener('click', () => {
                 mobileMenu.classList.toggle('hidden');
             });
-            
+
             // Tab functionality
             const setupTabs = (containerSelector) => {
                 const container = document.querySelector(containerSelector);
                 if (!container) return;
-                
+
                 const tabButtons = container.querySelectorAll('.tab-btn');
                 const tabContents = container.querySelectorAll('.tab-content');
 
@@ -351,7 +404,7 @@
                     button.addEventListener('click', () => {
                         tabButtons.forEach(btn => btn.classList.remove('active'));
                         button.classList.add('active');
-                        
+
                         const targetTab = button.dataset.tab;
                         tabContents.forEach(content => {
                             if (content.id === targetTab) {
@@ -388,12 +441,12 @@
                         grid: { color: '#e7e5e4' } // stone-200
                     },
                     x: {
-                        ticks: { color: '#57534e' }, // stone-600
+                        ticks: { color: '#57534e' },
                         grid: { display: false }
                     }
                 }
             };
-            
+
             // Penetration Chart
             const penetrationCtx = document.getElementById('penetrationChart').getContext('2d');
             new Chart(penetrationCtx, {
@@ -513,6 +566,39 @@
                     }
                  }
             });
+
+            // Image Gallery Swipe Functionality
+            const gallery = document.getElementById('image-gallery-scrollable');
+            let isDown = false;
+            let startX;
+            let scrollLeft;
+
+            if (gallery) { // Ensure gallery element exists before adding listeners
+                gallery.addEventListener('mousedown', (e) => {
+                    isDown = true;
+                    gallery.classList.add('active-drag'); // Optional: Add a class for styling when dragging
+                    startX = e.pageX - gallery.offsetLeft;
+                    scrollLeft = gallery.scrollLeft;
+                });
+
+                gallery.addEventListener('mouseleave', () => {
+                    isDown = false;
+                    gallery.classList.remove('active-drag');
+                });
+
+                gallery.addEventListener('mouseup', () => {
+                    isDown = false;
+                    gallery.classList.remove('active-drag');
+                });
+
+                gallery.addEventListener('mousemove', (e) => {
+                    if (!isDown) return;
+                    e.preventDefault(); // Prevent text selection and other default behaviors
+                    const x = e.pageX - gallery.offsetLeft;
+                    const walk = (x - startX) * 1.5; // Multiplier for faster/slower scroll
+                    gallery.scrollLeft = scrollLeft - walk;
+                });
+            }
         });
 
     </script>
